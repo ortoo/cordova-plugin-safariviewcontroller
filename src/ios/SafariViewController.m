@@ -26,6 +26,8 @@
 
   vc = [[SFSafariViewController alloc] initWithURL:url entersReaderIfAvailable:readerMode];
   vc.delegate = self;
+  vc.modalTransitionStyle = UIModalTransitionStyleCoverVertical;
+  vc.modalPresentationStyle = UIModalPresentationOverFullScreen;
   // not really necessary to move the callback to the completion handler
   [self.viewController presentViewController:vc animated:self.animated completion:nil];
   // .. so doing it here
