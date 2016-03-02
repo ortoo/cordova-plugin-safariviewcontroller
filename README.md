@@ -9,7 +9,8 @@ by Eddy Verbruggen - [@eddyverbruggen](https://twitter.com/eddyverbruggen)
 3. [Installation](#3-installation)
 4. [Usage](#4-usage)
 5. [Advantages over InAppBrowser](#5-advantages-over-inappbrowser)
-6. [Changelog](#6-changelog)
+6. [Reading Safari Data and Cookies with Cordova](#6-reading-safari-data-and-cookies-with-cordova)
+7. [Changelog](#7-changelog)
 
 ## 1. Description
 * Use in cases where you'd otherwise use InAppBrowser
@@ -31,6 +32,8 @@ Pressing 'Done' returns the user to your app as you'd expect.
 <img src="screenshots/02-demoapp.PNG" width="350"/>&nbsp;
 <img src="screenshots/03-demoapp.PNG" width="350"/>&nbsp;
 <img src="screenshots/04-demoapp.PNG" width="350"/>&nbsp;
+<img src="screenshots/05-curl.PNG" width="350"/>&nbsp;
+<img src="screenshots/06-flip.PNG" width="350"/>&nbsp;
 
 ## 3. Installation
 To install the plugin with the Cordova CLI from npm:
@@ -96,7 +99,59 @@ function dismissSafari() {
 * Since this is the system's main browser, assets like cookies are shared with your app, so the user is still logged on in his favorite websites.
 * Whereas `cordova-plugin-inappbrowser` is affected by [ATS](https://developer.apple.com/library/prerelease/ios/technotes/App-Transport-Security-Technote/), this plugin is not. This means you can even load `http` URL's without whitelisting them.
 
-## 6. Changelog
+## 6. Reading Safari Data and Cookies with Cordova
+
+SFSafariViewController implements "real" Safari, meaning private data like cookies and Keychain passwords are available to the user. However, for security, this means that communication features such as javascript, CSS injection and some callbacks that are available in UIWebView are not available in SFSafariViewController.
+
+To pass data from a web page loaded in SFSafariViewController back to your Cordova app, you can use a Custom URL Scheme such as _<mycoolapp://data?to=pass>_.  You will need to install an addition plugin to handle receiving data passed via URL Scheme in your Cordova app.
+
+Combining the URL Scheme technique with the HIDDEN option in this plugin means you can effectively read data from Safari in the background of your Cordova app. This could be useful for automatically logging in a user to your app if they already have a user token saved as a cookie in Safari.
+
+Do this:
+
+1. Install the [Custom URL Scheme Plugin](https://github.com/EddyVerbruggen/Custom-URL-scheme)
+2. Create a web page that reads Safari data on load and passes that data to the URL scheme:
+
+    ```javascript
+    <html>
+      <head>
+        <script type="javascript">
+          function GetCookieData() {
+            var app = "mycoolapp"; // Your Custom URL Scheme
+            var data = document.cookie; // Change to be whatever data you want to read
+            window.location = app + '://?data=' + encodeURIComponent(data); // Pass data to your app
+          }
+        </script>
+      </head>
+      <body onload="GetCookieData()">
+      </body>
+    </html>
+    ```
+
+3. Open the web page you created with a hidden Safari view:
+
+    ```javascript
+    SafariViewController.show({
+      url: 'http://mycoolapp.com/hidden.html',
+      hidden: true,
+      animated: false
+    });
+    ```
+
+4. Capture the data passed from the web page via the URL Scheme:
+
+    ```javascript
+    function handleOpenURL(url) {
+      setTimeout(function() {
+        SafariViewController.hide();
+        var data = decodeURIComponenturl.substr(url.indexOf('=')+1));
+        console.log('Browser data received: ' + data);
+      }, 0);
+    }
+    ```
+
+
+## 7. Changelog
 * 1.4.0 Added a `hidden` property to `show`.
 * 1.3.0 `isAvailable` plays nice with non-iOS platforms. Added a `transition` property to `show`.
 * 1.2.0 Added lifecycle events to the success handler of `show`, and added the `animated` property to `show`.
